@@ -8,8 +8,20 @@ NO_COLOR='\033[0m'
 
 todo_regex="TODO"
 
+if [ $# -eq 1 ]
+then
+todo_regex=$1
+fi
+
 output=""
 while read line; do
+
+#exit if line is empty
+if [ -z "$line" ]
+then
+    exit
+fi
+
 
 filename=$(echo "$line" | sed -r -n 's/^([^:]+):.*/\1/p')
 line_number=$(echo "$line" | sed -r -n 's/^([^:]+):([0-9]+):.*/\2/p')
@@ -24,9 +36,9 @@ if [ -z "$(git ls-files $filename)" ]; then
      commit_date=$(date -d @$commit_time)
 else 
     commit_hash=$(git blame -p -L $line_number,+1 $filename | head -n 1 | sed -r -n 's/^([0-9a-f]+).*/\1/p')
-    commit_time=$(git blame -p -L $line_number,+1 $filename | sed -r -n 's/author-time (.*)/\1/p')
-    commit_author=$(git blame -p -L $line_number,+1 $filename | sed -r -n 's/author (.*)/\1/p')
-    commit_summary=$(git blame -p -L $line_number,+1 $filename | sed -r -n 's/summary (.*)/\1/p')
+    commit_time="$(git blame -p -L $line_number,+1 $filename | sed -r -n 's/^author-time (.*)/\1/p')"
+    commit_author=$(git blame -p -L $line_number,+1 $filename | sed -r -n 's/^author (.*)/\1/p')
+    commit_summary=$(git blame -p -L $line_number,+1 $filename | sed -r -n 's/^summary (.*)/\1/p')
 
     short_hash=$(git rev-parse --short $commit_hash)
     commit_date=$(date -d @$commit_time)
