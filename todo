@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+
+RED='\033[1;31m'
+GREEN='\033[0;32m'
+ORANGE='\033[0;33m'
+GRAY='\033[0;37m'
+NO_COLOR='\033[0m'
+
+todo_regex="TODO"
+
+output=""
+while read line; do
+
+filename=$(echo "$line" | sed -r -n 's/^([^:]+):.*/\1/p')
+line_number=$(echo "$line" | sed -r -n 's/^([^:]+):([0-9]+):.*/\2/p')
+todo=$(echo "$line" | sed -r -n 's/^([^:]+):([0-9]+):(.*)$/\3/p')
+
+if [ -z "$(git ls-files $filename)" ]; then
+     commit_hash=""
+     commit_time=$(date +"%s")
+     commit_author=""
+     commit_summary="Not Tracked"
+     short_hash=""
+     commit_date=$(date -d @$commit_time)
+else 
+    commit_hash=$(git blame -p -L $line_number,+1 $filename | head -n 1 | sed -r -n 's/^([0-9a-f]+).*/\1/p')
+    commit_time=$(git blame -p -L $line_number,+1 $filename | sed -r -n 's/author-time (.*)/\1/p')
+    commit_author=$(git blame -p -L $line_number,+1 $filename | sed -r -n 's/author (.*)/\1/p')
+    commit_summary=$(git blame -p -L $line_number,+1 $filename | sed -r -n 's/summary (.*)/\1/p')
+
+    short_hash=$(git rev-parse --short $commit_hash)
+    commit_date=$(date -d @$commit_time)
+fi
+
+
+todo_color_regex="s/$todo_regex/\\$RED$todo_regex\\$NO_COLOR/"
+todo_color=$(echo "$todo" | sed -r $todo_color_regex)
+
+todo_output=$(
+    printf "$commit_time "
+    printf "$ORANGE$filename$NO_COLOR:$GREEN$line_number$NO_COLOR: $todo_color$GRAY"
+    printf "\261"
+    printf "  $short_hash ($commit_date $commit_author)"
+    printf "\261"
+    printf "  $commit_summary\n"
+)
+
+output=$(printf "$output\n$todo_output")
+
+
+#TODO exclude dirs in gitignore?
+done <<< $(grep -r -n -E --exclude-dir={node_modules,.git} $todo_regex)
+
+printf "$output" | sort | sed -e 's/'$(printf "\261")'/\n/g' | sed -r 's/^[0-9]{10} //g' | sed -r '/^\s*$/d'
