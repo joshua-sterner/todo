@@ -60,7 +60,6 @@ todo_output=$(
 output=$(printf "$output\n$todo_output")
 
 
-#TODO exclude dirs in gitignore?
-done <<< $(grep -r -n -E --exclude-dir={node_modules,.git} $todo_regex)
+done <<< $(git grep -r -n -E $todo_regex)
 
 printf "$output" | sort | sed -e 's/'$(printf "\261")'/\n/g' | sed -r 's/^[0-9]{10} //g' | sed -r '/^\s*$/d'
