@@ -45,7 +45,7 @@ else
 fi
 
 
-todo_color_regex="s/$todo_regex/\\$RED$todo_regex\\$NO_COLOR/"
+todo_color_regex="s/($todo_regex)/\\$RED\1\\$NO_COLOR/"
 todo_color=$(echo "$todo" | sed -r $todo_color_regex)
 
 todo_output=$(
@@ -60,6 +60,6 @@ todo_output=$(
 output=$(printf "$output\n$todo_output")
 
 
-done <<< $(git grep -r -n -E $todo_regex)
+done <<< $(git grep --untracked -r -n -E $todo_regex)
 
 printf "$output" | sort | sed -e 's/'$(printf "\261")'/\n/g' | sed -r 's/^[0-9]{10} //g' | sed -r '/^\s*$/d'
